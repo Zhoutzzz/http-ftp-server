@@ -112,7 +112,7 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
         } else {
 //            urlResponse.append(getHomeResponse());
             try {
-                fileListenAndDownload(ctx);
+                fileListenAndDownload(ctx, request);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -130,6 +130,9 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
                 HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
 
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html;charset=utf-8");
+        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES);
+        response.headers().set(HttpHeaderNames.CONTENT_RANGE, HttpHeaderValues.BYTES);
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
 
 
         //设置短连接 addListener 写完马上关闭连接
@@ -225,7 +228,7 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void fileListenAndDownload(ChannelHandlerContext ctx) throws Exception {
+    private void fileListenAndDownload(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         String uri = request.uri();
         String path = sanitizeUri(uri);
         File f = new File(path);
@@ -246,23 +249,41 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
         }
 
         RandomAccessFile file = new RandomAccessFile(f, "r");
-        long contentlength = file.length();
+        long contentLength = file.length();
+        long start = 0, end = 0;
+        HttpResponseStatus status;
+        String rangeHead = request.headers().get(HttpHeaderNames.RANGE);
+        if (rangeHead != null) {
+            String[] ranges = parseHead(request);
+            if (ranges.length > 1) {
+                sendAndCleanupConnection(ctx, new DefaultFullHttpResponse(HTTP_1_1, REQUESTED_RANGE_NOT_SATISFIABLE, Unpooled.EMPTY_BUFFER));
+                return;
+            }
+            for (String string : ranges) {
+                String[] r = string.split("-");
+                start = Integer.parseInt(r[0]);
+//                file.seek(start);
+                end = r.length > 1 ? Integer.parseInt(r[1]) : contentLength;
+            }
+            if (end > 0 && end <= contentLength) {
+                status = PARTIAL_CONTENT;
+            } else {
+                status = REQUESTED_RANGE_NOT_SATISFIABLE;
+            }
+        } else {
+            status = OK;
+            end = contentLength;
+        }
 
         MimetypesFileTypeMap fileTypeMap = new MimetypesFileTypeMap();
+        DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
-        DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-
-        HttpUtil.setContentLength(response, contentlength);
-//        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-//        response.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        HttpUtil.setContentLength(response, end);
         String contentType = fileTypeMap.getContentType(f.getPath());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES);
-//        response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment; filename=server.class");
-//        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, file.length());
-//        response.headers().set(HttpHeaderNames.EXPIRES, LocalDateTime.now());
-//        response.headers().set(HttpHeaderNames.LAST_MODIFIED, LocalDateTime.now());
-        response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes" + "0-" + contentlength + "/" + contentlength);
+        if (rangeHead != null) {
+            response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + contentLength);
+        }
 
 
 //        if (!keepAlive) {
@@ -271,11 +292,10 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
 //        }
 
         ctx.write(response);
-//        ReferenceCountUtil.release(msg);
 
         ChannelFuture sendFileFuture;
         //写出ChunkedFile
-        sendFileFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(file, 0, contentlength, 8192)), ctx.newProgressivePromise());
+        sendFileFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(file, start, end - start, 8192)), ctx.newProgressivePromise());
         //添加传输监听
         sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
             @Override
@@ -387,5 +407,13 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
             // Close the connection as soon as the response is sent.
             flushPromise.addListener(ChannelFutureListener.CLOSE);
         }
+    }
+
+    private String[] parseHead(HttpRequest request) {
+        String rangeParam = request.headers().get(HttpHeaderNames.RANGE);
+        if (rangeParam == null) {
+            return new String[]{};
+        }
+        return rangeParam.split("=")[1].split(",");
     }
 }
