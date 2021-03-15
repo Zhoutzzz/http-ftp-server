@@ -266,12 +266,19 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
             for (String string : ranges) {
                 String[] r = string.split("-");
                 start = Integer.parseInt(r[0]);
-                end = r.length > 1 ? Integer.parseInt(r[1]) : contentLength;
+                if (r.length > 1) {
+                    end = Integer.parseInt(r[1]);
+                    if (Integer.parseInt(r[1]) == start) {
+                        end = contentLength;
+                    }
+                } else {
+                    end = contentLength;
+                }
             }
             if (end < 0 || end > contentLength) {
                 status = REQUESTED_RANGE_NOT_SATISFIABLE;
             }
-            file.seek(start);
+//            file.seek(start);
         } else {
             status = OK;
             end = contentLength;
@@ -295,7 +302,7 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
         MimetypesFileTypeMap fileTypeMap = new MimetypesFileTypeMap();
         DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
-        HttpUtil.setContentLength(response, contentLength);
+        HttpUtil.setContentLength(response, end - start);
         String contentType = fileTypeMap.getContentType(f.getPath());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
         response.headers().set(HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES);
@@ -304,9 +311,9 @@ public class HttpTransportServer extends ChannelInboundHandlerAdapter {
         }
         ctx.write(response);
 
-        ChannelFuture sendFileFuture;
         //写出ChunkedFile
-        sendFileFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(file, start, end - start, 8192)), ctx.newProgressivePromise());
+        ChunkedFile chunkedFile = new ChunkedFile(file, start, end - start + 1, 8192);
+        ChannelFuture sendFileFuture = ctx.writeAndFlush(new HttpChunkedInput(chunkedFile), ctx.newProgressivePromise());
         //添加传输监听
         sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
             @Override
