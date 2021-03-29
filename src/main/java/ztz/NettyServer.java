@@ -7,6 +7,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import ztz.ftp.ChannelInit;
 
 public class NettyServer {
     static ServerBootstrap serverBootstrap = new ServerBootstrap();
@@ -18,7 +19,7 @@ public class NettyServer {
         try {
 
             serverBootstrap.group(boss, work).channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.INFO)).childHandler(new ServerInitialize());
+                    .handler(new LoggingHandler(LogLevel.INFO)).childHandler(new ChannelInit());
 
             Channel ch = serverBootstrap.bind(10001).sync().channel();
             ch.closeFuture().sync();
