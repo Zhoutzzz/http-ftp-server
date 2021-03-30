@@ -15,6 +15,13 @@ public class DefaultCommandExecutionTemplate extends CommandExecutionTemplate {
     final ActivePassiveSocketManager activePassiveSocketManager;
     final DataReceiver dataReceiver;
 
+    public static void main(String[] args) {
+        int n = 2;
+        for (;;) {
+            n <<= 2;
+        }
+    }
+
 
     public DefaultCommandExecutionTemplate(DataReceiver dataReceiver) {
         this(new ActivePassiveSocketManager(new byte[]{127, 0, 0, 1}, 2121, 4242, 10), dataReceiver);
