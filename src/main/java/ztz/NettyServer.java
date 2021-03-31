@@ -21,7 +21,7 @@ public class NettyServer {
             serverBootstrap.group(boss, work).channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO)).childHandler(new FtpChannelInit());
 
-            Channel ch = serverBootstrap.bind(10001).sync().channel();
+            Channel ch = serverBootstrap.bind(2121).sync().channel();
             ch.closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();

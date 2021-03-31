@@ -55,13 +55,13 @@ public class ActivePassiveSocketManager {
 	
 	
 	public Socket getActiveSocket(ChannelHandlerContext ctx) {
-		return ctx.attr(FTPAttrKeys.ACTIVE_SOCKET).get();
+		return ctx.channel().attr(FTPAttrKeys.ACTIVE_SOCKET).get();
 	}
 	
 	
 	
 	public void closeActiveSocket(ChannelHandlerContext ctx) {
-		Socket activeSocket = ctx.attr(FTPAttrKeys.ACTIVE_SOCKET).get();
+		Socket activeSocket = ctx.channel().attr(FTPAttrKeys.ACTIVE_SOCKET).get();
 		if (null == activeSocket)
 			return;
 		try {
@@ -78,23 +78,23 @@ public class ActivePassiveSocketManager {
 		Socket activeSocket;
 		activeSocket = new Socket(addr.getAddress(),
 				addr.getPort());
-		ctx.attr(FTPAttrKeys.ACTIVE_SOCKET).set(activeSocket);
+		ctx.channel().attr(FTPAttrKeys.ACTIVE_SOCKET).set(activeSocket);
 	}
 	
 	public ServerSocket getPassiveSocket(ChannelHandlerContext ctx) {
-		return  ctx.attr(FTPAttrKeys.PASSIVE_SOCKET).get();
+		return  ctx.channel().attr(FTPAttrKeys.PASSIVE_SOCKET).get();
 	}
 	
 	public ServerSocket openPassiveSocket(ChannelHandlerContext ctx,int port, InetAddress addr)
 			throws IOException {
 		ServerSocket passiveSocket;
 		passiveSocket = new ServerSocket(port, 50, addr);
-		ctx.attr(FTPAttrKeys.PASSIVE_SOCKET).set(passiveSocket);
+		ctx.channel().attr(FTPAttrKeys.PASSIVE_SOCKET).set(passiveSocket);
 		return passiveSocket;
 	}
 	
 	public void closePassiveSocket(ChannelHandlerContext ctx) {
-		ServerSocket passiveSocket = ctx.attr(FTPAttrKeys.PASSIVE_SOCKET).getAndRemove();
+		ServerSocket passiveSocket = ctx.channel().attr(FTPAttrKeys.PASSIVE_SOCKET).getAndSet(null);
 		if (null == passiveSocket)
 			return;
 		try {

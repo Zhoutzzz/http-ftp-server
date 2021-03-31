@@ -21,5 +21,5 @@ public interface DataReceiver {
      * @param data uploaded file stream
      * @throws IOException on IO error
      */
-    void receive(String name, InputStream data) throws IOException;
+    default void receive(String name, InputStream data) throws IOException{};
 }

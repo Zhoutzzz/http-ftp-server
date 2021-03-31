@@ -46,7 +46,7 @@ public class StorCmd extends AbstractFTPCommand {
 								+ activeSocket + "]", e1);
 				send("552 Requested file action aborted", ctx, args);
 			} finally {
-				activePassiveSocketManager.closeActiveSocket(ctx);
+//				activePassiveSocketManager.closeActiveSocket(ctx);
 			}
 		} else if ("PASV".equals(lastCommand)) {
 			if (null == passiveSocket)
@@ -65,7 +65,7 @@ public class StorCmd extends AbstractFTPCommand {
 								+ "]", e1);
 				send("552 Requested file action aborted", ctx, args);
 			} finally {
-				activePassiveSocketManager.closePassiveSocket(ctx);
+//				activePassiveSocketManager.closePassiveSocket(ctx);
 			}
 		} else
 			send("503 Bad sequence of commands", ctx, args);

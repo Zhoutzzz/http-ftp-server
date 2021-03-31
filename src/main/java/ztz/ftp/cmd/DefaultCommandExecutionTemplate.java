@@ -103,6 +103,8 @@ public class DefaultCommandExecutionTemplate extends CommandExecutionTemplate {
                         register(new SystCmd());
                         register(new TypeCmd());
                         register(new UserCmd());
+                        register(new RetrCmd(activePassiveSocketManager));
+                        register(new RestCmd());
                     }
 
                     void register(FTPCommand cmd) {
