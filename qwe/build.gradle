@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/jcenter/'}
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.0-alpha1'
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12
+    testImplementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '2.0.0-alpha1'
+    // https://mvnrepository.com/artifact/io.netty/netty-all
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.56.Final'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/commons-net/commons-net
+    implementation group: 'commons-net', name: 'commons-net', version: '3.6'
+}
